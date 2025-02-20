@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线图片尺寸调整工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #666;
+            background-color: #f9f9f9;
+        }
+
+        .upload-area.dragover {
+            border-color: #2196F3;
+            background-color: #E3F2FD;
+        }
+
+        .preview {
+            max-width: 100%;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .preview img {
+            max-width: 100%;
+            max-height: 400px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #1976D2;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: #f44336;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>在线图片尺寸调整工具</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽图片到这里上传</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="controls">
+            <div>
+                <label for="width">宽度 (像素):</label>
+                <input type="number" id="width" min="1" max="10000">
+            </div>
+            <div>
+                <label for="height">高度 (像素):</label>
+                <input type="number" id="height" min="1" max="10000">
+            </div>
+            <button id="resizeBtn" disabled>调整大小</button>
+            <button id="downloadBtn" disabled>下载</button>
+        </div>
+
+        <div class="preview">
+            <img id="preview" style="display: none;">
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const widthInput = document.getElementById('width');
+        const heightInput = document.getElementById('height');
+        const resizeBtn = document.getElementById('resizeBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorDiv = document.getElementById('error');
+
+        let originalImage = null;
+
+        // 处理拖拽上传
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        // 处理点击上传
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('请上传图片文件');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    widthInput.value = img.width;
+                    heightInput.value = img.height;
+                    resizeBtn.disabled = false;
+                    errorDiv.textContent = '';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 调整图片大小
+        resizeBtn.addEventListener('click', () => {
+            const width = parseInt(widthInput.value);
+            const height = parseInt(heightInput.value);
+
+            if (!width || !height || width < 1 || height < 1) {
+                showError('请输入有效的宽度和高度');
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(originalImage, 0, 0, width, height);
+
+            preview.src = canvas.toDataURL('image/png');
+            downloadBtn.disabled = false;
+        });
+
+        // 下载图片
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'resized_image.png';
+            link.href = preview.src;
+            link.click();
+        });
+
+        function showError(message) {
+            errorDiv.textContent = message;
+        }
+    </script>
+</body>
+</html> 
